@@ -1,0 +1,4 @@
+aiohttp>=3.9
+asyncpg>=0.29
+redis[asyncio]>=5.0
+pydantic>=2.7

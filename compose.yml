@@ -1,0 +1,130 @@
+services:
+  db:
+    image: timescale/timescaledb-ha:pg16
+    container_name: situationroom-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: situationroom
+      POSTGRES_USER: situationroom
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+    volumes:
+      - db_data:/home/postgres/pgdata/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U situationroom -d situationroom"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: situationroom-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  db-migrate:
+    image: timescale/timescaledb-ha:pg16
+    container_name: situationroom-migrate
+    environment:
+      PGPASSWORD: ${POSTGRES_PASSWORD:-password}
+    volumes:
+      - ./db/migrations:/migrations:ro
+    entrypoint: >
+      bash -c "
+        set -e;
+        until pg_isready -h db -U situationroom -d situationroom; do
+          echo 'Waiting for database...'; sleep 2;
+        done;
+        for f in /migrations/*.sql; do
+          echo \"Applying $$f...\";
+          psql -h db -U situationroom -d situationroom -v ON_ERROR_STOP=1 -f $$f;
+        done;
+        echo 'Migrations complete.'
+      "
+    depends_on:
+      db:
+        condition: service_healthy
+    profiles:
+      - migrate
+
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: situationroom-api
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgres://situationroom:${POSTGRES_PASSWORD:-password}@db:5432/situationroom
+      REDIS_URL: redis://redis:6379/0
+      API_PORT: 8080
+      ADMIN_KEY: ${ADMIN_KEY}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost,http://localhost:5173}
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    profiles:
+      - app
+
+  workers:
+    build:
+      context: ./workers
+      dockerfile: Dockerfile
+    container_name: situationroom-workers
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://situationroom:${POSTGRES_PASSWORD:-password}@db:5432/situationroom
+      REDIS_URL: redis://redis:6379/0
+      AISSTREAM_API_KEY: ${AISSTREAM_API_KEY:-}
+      OPENSKY_CLIENT_ID: ${OPENSKY_CLIENT_ID:-}
+      OPENSKY_CLIENT_SECRET: ${OPENSKY_CLIENT_SECRET:-}
+      ADSB_BBOX: ${ADSB_BBOX:-20,-80,75,60}
+      AIS_BBOX: ${AIS_BBOX:-20,-80,75,60}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    profiles:
+      - app
+
+  # Production frontend: multi-stage build (Vite → static dist served by nginx:alpine).
+  # In dev, run the frontend on the host with `npm run dev` instead — do not use this service.
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile       # multi-stage: node build → nginx:alpine serve dist/
+    container_name: situationroom-frontend
+    restart: unless-stopped
+    # No ports exposed directly — Nginx (below) serves it on port 80
+    depends_on:
+      - api
+    profiles:
+      - app
+
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    container_name: situationroom-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - api
+      - frontend
+    profiles:
+      - app
+
+volumes:
+  db_data:
