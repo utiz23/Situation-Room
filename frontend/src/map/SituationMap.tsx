@@ -21,6 +21,7 @@ import { useEntityStream } from '../hooks/useEntityStream'
 import { useAircraftLayer } from './layers/AircraftLayer'
 import { useShipLayer } from './layers/ShipLayer'
 import { useGpsJamLayer } from './layers/GpsJamLayer'
+import { useSatelliteLayer } from './layers/SatelliteLayer'
 
 // OpenFreeMap liberty style — free, no API key required.
 // Serves vector tiles and renders them client-side with MapLibre.
@@ -57,9 +58,10 @@ export default function SituationMap() {
   const gpsJamLayer   = useGpsJamLayer()
   const shipLayer     = useShipLayer()
   const aircraftLayer = useAircraftLayer()
+  const satelliteLayer = useSatelliteLayer()
 
-  // Layer order = render order: jam hexes at bottom, then ships, aircraft on top
-  const layers = [gpsJamLayer, shipLayer, aircraftLayer].filter(Boolean)
+  // Layer order = render order: jam hexes at bottom, then ships, satellites, aircraft on top
+  const layers = [gpsJamLayer, shipLayer, satelliteLayer, aircraftLayer].filter(Boolean)
 
   // Debounce viewport messages: onViewStateChange fires at up to 60 fps during
   // drag/zoom. We only need to tell the server when the camera settles, so we

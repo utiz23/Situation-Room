@@ -24,6 +24,7 @@ from common.redis_client import RedisPublisher
 import adsb.ingest as adsb_ingest
 import ais.ingest as ais_ingest
 import gpsjam.ingest as gpsjam_ingest
+import satellites.ingest as satellite_ingest
 
 
 logging.basicConfig(
@@ -50,7 +51,7 @@ async def main() -> None:
                 adsb_ingest.run(publisher, inserter),
                 ais_ingest.run(publisher, inserter),
                 gpsjam_ingest.run(inserter),
-                # satellite_ingest.run(inserter),         # Step 9
+                satellite_ingest.run(inserter),
             )
         finally:
             await inserter.stop()

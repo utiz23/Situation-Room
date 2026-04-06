@@ -15,7 +15,7 @@
 //        POST /api/events    [admin]        → create event (Step 10)
 //        DELETE /api/events/:id [admin]     → delete event (Step 10)
 //        GET  /api/gpsjam/current           → GPS jamming hexagons ✓
-//        GET  /api/satellites/tles          → satellite TLE data (Step 9)
+//        GET  /api/satellites/tles          → satellite TLE data ✓
 package main
 
 import (
@@ -99,6 +99,7 @@ func main() {
 	api.Get("/health", handlers.Health)
 	api.Get("/entities", handlers.GetEntities(pool))
 	api.Get("/gpsjam/current", handlers.GetGpsJam(pool))
+	api.Get("/satellites/tles", handlers.GetSatellites(pool))
 
 	app.Get("/ws", handlers.WebSocketHandler(hub, pool))
 

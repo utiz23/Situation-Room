@@ -90,6 +90,7 @@ services:
       OPENSKY_CLIENT_SECRET: ${OPENSKY_CLIENT_SECRET:-}
       ADSB_BBOX: ${ADSB_BBOX:-20,-80,75,60}
       AIS_BBOX: ${AIS_BBOX:-20,-80,75,60}
+      SATELLITE_CONSTELLATION: ${SATELLITE_CONSTELLATION:-starlink}
     depends_on:
       db:
         condition: service_healthy
