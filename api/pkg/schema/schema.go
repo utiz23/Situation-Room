@@ -48,10 +48,19 @@ type NormalizedEntity struct {
 	Timestamp time.Time      `json:"timestamp"`
 }
 
-// RedisMessage is the envelope that wraps entity updates on Redis Pub/Sub.
-// Workers publish this; the Go gateway reads it and fans out to WebSocket clients.
+// RedisMessage is the envelope that wraps all Redis Pub/Sub messages.
+// Workers publish entity updates; the API server publishes event notifications.
+// The Go gateway reads all of these and fans them out to WebSocket clients.
+//
+// Type values:
+//
+//	"update" — entity position changed; Entity field is set
+//	"remove" — entity gone; ID field is set (e.g. "adsb:abc123")
+//	"event"  — new admin-submitted map event; Event field is set
+//	           Published to channel:events by POST /api/events handler.
+//	           Not produced by Python workers.
 type RedisMessage struct {
-	// Type is "update" (entity position changed) or "remove" (entity gone)
+	// Type is "update", "remove", or "event" — see above.
 	Type string `json:"type"`
 
 	// Entity is set when Type == "update"
@@ -59,6 +68,9 @@ type RedisMessage struct {
 
 	// ID is set when Type == "remove", e.g. "adsb:abc123"
 	ID string `json:"id,omitempty"`
+
+	// Event is set when Type == "event"
+	Event *Event `json:"event,omitempty"`
 }
 
 // ---------------------------------------------------------------------------

@@ -10,8 +10,6 @@ Current workers:
   - ADS-B (aircraft): polls OpenSky every 15 seconds
   - AIS (ships): persistent WebSocket to AISStream
   - GPS Jamming: daily CSV fetch from GPSJam
-
-Future workers added here (Step 9):
   - Satellites: hourly TLE fetch from CelesTrak
 """
 

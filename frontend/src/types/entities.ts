@@ -57,4 +57,5 @@ export interface NormalizedEntity {
 export type WsMessage =
   | { type: "update"; entity: NormalizedEntity }
   | { type: "remove"; id: string }
-  | { type: "snapshot"; entities: NormalizedEntity[] };
+  | { type: "snapshot"; entities: NormalizedEntity[] }
+  | { type: "event"; event: import("./layers").MapEvent };

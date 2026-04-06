@@ -22,6 +22,7 @@ import { useAircraftLayer } from './layers/AircraftLayer'
 import { useShipLayer } from './layers/ShipLayer'
 import { useGpsJamLayer } from './layers/GpsJamLayer'
 import { useSatelliteLayer } from './layers/SatelliteLayer'
+import { useEventLayer } from './layers/EventLayer'
 
 // OpenFreeMap liberty style — free, no API key required.
 // Serves vector tiles and renders them client-side with MapLibre.
@@ -56,12 +57,14 @@ export default function SituationMap() {
 
   const { sendViewport } = useEntityStream()
   const gpsJamLayer   = useGpsJamLayer()
+  const eventLayer    = useEventLayer()
   const shipLayer     = useShipLayer()
-  const aircraftLayer = useAircraftLayer()
   const satelliteLayer = useSatelliteLayer()
+  const aircraftLayer = useAircraftLayer()
 
-  // Layer order = render order: jam hexes at bottom, then ships, satellites, aircraft on top
-  const layers = [gpsJamLayer, shipLayer, satelliteLayer, aircraftLayer].filter(Boolean)
+  // Layer order = render order (bottom → top):
+  //   GPS jam hexes → events → ships → satellites → aircraft
+  const layers = [gpsJamLayer, eventLayer, shipLayer, satelliteLayer, aircraftLayer].filter(Boolean)
 
   // Debounce viewport messages: onViewStateChange fires at up to 60 fps during
   // drag/zoom. We only need to tell the server when the camera settles, so we
@@ -70,8 +73,9 @@ export default function SituationMap() {
   const vpTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const handleViewStateChange = useCallback(
-    ({ viewState: next }: { viewState: MapViewState }) => {
-      setViewState(next)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ({ viewState: next }: { viewState: any }) => {
+      setViewState(next as MapViewState)
 
       if (vpTimerRef.current) clearTimeout(vpTimerRef.current)
       vpTimerRef.current = setTimeout(() => {

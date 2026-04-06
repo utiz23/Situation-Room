@@ -10,10 +10,9 @@
 //        GET  /api/entities  → JSON array of current entity positions (REST snapshot)
 //        GET  /ws            → WebSocket: snapshot on connect + live entity stream
 //
-// Future routes (added in later steps):
-//        GET  /api/events                   → list events (Step 10)
-//        POST /api/events    [admin]        → create event (Step 10)
-//        DELETE /api/events/:id [admin]     → delete event (Step 10)
+//        GET  /api/events                   → list events ✓
+//        POST /api/events    [admin]        → create event ✓
+//        DELETE /api/events/:id [admin]     → delete event ✓
 //        GET  /api/gpsjam/current           → GPS jamming hexagons ✓
 //        GET  /api/satellites/tles          → satellite TLE data ✓
 package main
@@ -34,6 +33,7 @@ import (
 	"situationroom/api/internal/config"
 	appdb "situationroom/api/internal/db"
 	"situationroom/api/internal/http/handlers"
+	"situationroom/api/internal/middleware"
 	appredis "situationroom/api/internal/redis"
 	"situationroom/api/internal/ws"
 )
@@ -55,9 +55,17 @@ func main() {
 	// --- WebSocket hub ---
 	hub := ws.NewHub()
 
+	// --- Redis client (for publishing new events) ---
+	redisClient, err := appredis.NewClient(cfg.RedisURL)
+	if err != nil {
+		log.Fatalf("redis: %v", err)
+	}
+	defer redisClient.Close()
+
 	// --- Redis subscriber ---
 	// Runs in a background goroutine. Subscribes to all entity channels and
 	// calls hub.BroadcastFiltered / hub.BroadcastAll for each message.
+	// Reconnects automatically with exponential backoff on connection drops.
 	go appredis.Subscribe(ctx, cfg.RedisURL, hub)
 
 	// --- HTTP server ---
@@ -100,6 +108,12 @@ func main() {
 	api.Get("/entities", handlers.GetEntities(pool))
 	api.Get("/gpsjam/current", handlers.GetGpsJam(pool))
 	api.Get("/satellites/tles", handlers.GetSatellites(pool))
+
+	// Events: GET is public; POST and DELETE require the admin key.
+	adminAuth := middleware.RequireAdminKey(cfg.AdminKey)
+	api.Get("/events", handlers.GetEvents(pool))
+	api.Post("/events", adminAuth, handlers.CreateEvent(pool, redisClient))
+	api.Delete("/events/:id", adminAuth, handlers.DeleteEvent(pool))
 
 	app.Get("/ws", handlers.WebSocketHandler(hub, pool))
 

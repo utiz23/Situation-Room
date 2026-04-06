@@ -15,6 +15,7 @@
 import { useCallback, useEffect } from 'react'
 import { useWebSocket } from './useWebSocket'
 import { useEntitiesStore } from '../store/entities.store'
+import { useEventsStore } from '../store/events.store'
 import type { WsMessage } from '../types/entities'
 
 export function useEntityStream() {
@@ -22,6 +23,7 @@ export function useEntityStream() {
   const applyUpdate   = useEntitiesStore((s) => s.applyUpdate)
   const removeEntity  = useEntitiesStore((s) => s.removeEntity)
   const pruneStale    = useEntitiesStore((s) => s.pruneStale)
+  const addEvent      = useEventsStore((s) => s.addEvent)
 
   const handleMessage = useCallback(
     (msg: WsMessage) => {
@@ -35,9 +37,13 @@ export function useEntityStream() {
         case 'remove':
           removeEntity(msg.id)
           break
+        case 'event':
+          // New admin event pushed from the server — add to events store
+          addEvent(msg.event)
+          break
       }
     },
-    [applySnapshot, applyUpdate, removeEntity],
+    [applySnapshot, applyUpdate, removeEntity, addEvent],
   )
 
   const { send } = useWebSocket(handleMessage)

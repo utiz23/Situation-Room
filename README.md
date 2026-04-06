@@ -152,3 +152,20 @@ See [dazzling-twirling-marshmallow.md](dazzling-twirling-marshmallow.md) for the
 ## Status
 
 Currently in **Phase 1 development** — see [dazzling-twirling-marshmallow.md](dazzling-twirling-marshmallow.md) for the build plan.
+
+## Workflow Assets
+
+To keep implementation/review handoffs consistent:
+
+- `SKILL.md` — repo workflow rules and gate commands
+- `docs/WORKFLOW.md` — role split and review gate process
+- `templates/PROJECT_STATUS_TEMPLATE.md` — handoff template
+- `scripts/check-step8.sh` — Step 8 runtime gate
+- `scripts/check-step9.sh` — Step 9 runtime gate
+- `scripts/check-prepush.sh` — pre-push wrapper (`step8|step9|all`)
+
+Example:
+
+```bash
+scripts/check-prepush.sh step9
+```

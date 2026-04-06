@@ -46,18 +46,22 @@ It displays five live data layers:
 
 ## Current Build Status
 
-We are on **Step 9 of 12** — GPS Jamming layer done, starting Satellite layer.
+We are on **Step 10 of 12** — Events system complete and verified.
 
 | Step | Status | What it is |
 |---|---|---|
 | 1. Scaffolding | ✓ Done | `compose.yml`, `.env.example`, `.gitignore` |
 | 2. Database migrations | ✓ Done | SQL files that set up the database tables |
 | 3. Shared schemas | ✓ Done | Data structure definitions used by all services |
-| 4. ADS-B worker | ✓ Done | Python script that fetches aircraft data |
-| 7. AIS worker | ✓ Done | WebSocket to AISStream, ship positions |
-| 5. Go API gateway | ✓ Done | Backend server + WebSocket |
-| 6. Frontend shell | ✓ Done | React map app |
-| 7–12. Remaining layers | Pending | Ships, GPS jamming, satellites, events, UI polish |
+| 4. ADS-B worker | ✓ Done | Python worker for OpenSky aircraft ingest |
+| 5. Go API gateway | ✓ Done | Backend server + WebSocket hub |
+| 6. Frontend shell | ✓ Done | React map app + live entity stream |
+| 7. AIS worker + ship layer | ✓ Done | AIS stream ingest + ship rendering |
+| 8. GPS jamming layer | ✓ Done | Daily ingest + REST + hex layer |
+| 9. Satellite layer | ✓ Done | TLE ingest + client-side propagation |
+| 10. Events system | ✓ Done | Admin create/delete + live WS event fanout |
+| 11. Nginx integration | Pending | Unified production serving/routing |
+| 12. UI polish | Pending | Layer controls, popups, icon polish |
 
 Full plan: [dazzling-twirling-marshmallow.md](dazzling-twirling-marshmallow.md)
 
