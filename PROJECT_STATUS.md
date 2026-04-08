@@ -86,6 +86,35 @@ Verified at `http://localhost` (port 80):
 - `GET /` → 200 HTML (React app)
 - `GET /ws` (with upgrade headers) → 101 Switching Protocols
 
+## Skills System — Added 2026-04-08
+
+### What changed
+- Created `skills/` directory with 4 operational skills:
+  - `skills/runtime-gate/SKILL.md` — pre-push and end-of-step service verification
+  - `skills/incident-triage/SKILL.md` — systematic failure diagnosis across all components
+  - `skills/schema-drift/SKILL.md` — Python/Go/TypeScript data structure comparison
+  - `skills/ui-regression/SKILL.md` — Playwright-based frontend smoke testing
+- Created `skills/README.md` — top-level index with usage guide
+- Updated `SKILL.md` — added Skills System section with table and recommended sequence
+- Playwright smoke tests already set up at `e2e/smoke.spec.ts` (4 tests, all passing)
+
+### What was validated
+- All 4 skill files contain real commands, real file paths, real repo structure
+- Playwright tests run and pass: `npx playwright test e2e/smoke.spec.ts` → 4 passed
+- Schema drift checker references the actual schema files and known intentional differences
+- Runtime gate commands match existing gate scripts and API endpoints
+
+### What still needs validation
+- Runtime Gate: run the full sequence with production stack up to confirm all endpoints respond
+- Incident Triage: will be validated organically when something next breaks
+- Schema Drift: run a manual field comparison to confirm no current drift exists
+- Skills integration: confirm a full end-of-step handoff using the recommended skill sequence
+
+### Next command
+```bash
+npx playwright test e2e/smoke.spec.ts
+```
+
 ## Next Steps
 Step 12: UI Polish
   - `LayerToggle.tsx` — visible toggle buttons on the map

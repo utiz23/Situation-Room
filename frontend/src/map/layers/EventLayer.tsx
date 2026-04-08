@@ -16,7 +16,7 @@
 
 import { useEffect, useMemo } from 'react'
 import { ScatterplotLayer } from '@deck.gl/layers'
-import type { Layer } from '@deck.gl/core'
+import type { Layer, PickingInfo } from '@deck.gl/core'
 import { useUiStore } from '../../store/ui.store'
 import { useEventsStore } from '../../store/events.store'
 import type { MapEvent } from '../../types/layers'
@@ -24,7 +24,11 @@ import type { MapEvent } from '../../types/layers'
 // Red — distinct from aircraft (cyan), ships (orange), satellites (gold)
 const EVENT_COLOR: [number, number, number, number] = [220, 30, 30, 230]
 
-export function useEventLayer(): Layer | null {
+interface Props {
+  onPick?: (info: PickingInfo) => void
+}
+
+export function useEventLayer({ onPick }: Props = {}): Layer | null {
   const visible   = useUiStore((s) => s.layers.events)
   const events    = useEventsStore((s) => s.events)
   const setEvents = useEventsStore((s) => s.setEvents)
@@ -46,11 +50,12 @@ export function useEventLayer(): Layer | null {
       data: events,
       getPosition: (e) => [e.lon, e.lat],
       getFillColor: EVENT_COLOR,
-      getRadius: 8_000,      // 8 km — larger than aircraft/ships, clearly visible
+      getRadius: 8_000,
       radiusMinPixels: 5,
       radiusMaxPixels: 20,
       pickable: true,
+      onClick: onPick,
       updateTriggers: { getPosition: events, getFillColor: events },
     })
-  }, [visible, events])
+  }, [visible, events, onPick])
 }

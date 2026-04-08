@@ -36,6 +36,12 @@ api/*.out
 .DS_Store
 Thumbs.db
 
+# Playwright test output
+test-results/
+
+# Claude Code local settings (per-machine, not shared)
+.claude/settings.local.json
+
 # Logs
 *.log
 logs/

@@ -1,0 +1,26 @@
+{
+  "name": "situationroom",
+  "version": "1.0.0",
+  "description": "An open-source live geospatial intelligence platform. Think of it as a radar screen for the world — it pulls real data from the internet and plots it on an interactive map in real time.",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/utiz23/Situation-Room.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/utiz23/Situation-Room/issues"
+  },
+  "homepage": "https://github.com/utiz23/Situation-Room#readme",
+  "devDependencies": {
+    "@playwright/test": "^1.59.1"
+  }
+}

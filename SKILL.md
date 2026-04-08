@@ -39,6 +39,32 @@ npm run dev
 - Step 9 gate: `scripts/check-step9.sh`
 - Pre-push gate wrapper: `scripts/check-prepush.sh <step8|step9|all>`
 
+## Skills System
+
+Reusable, step-by-step procedures for common development tasks. Each skill lives in `skills/<name>/SKILL.md`.
+
+| Skill | Folder | When to use |
+|---|---|---|
+| Runtime Gate | `skills/runtime-gate/` | Before push, after config changes, end-of-step verification |
+| Incident Triage | `skills/incident-triage/` | When any service is down or returning errors |
+| Schema Drift Checker | `skills/schema-drift/` | After modifying data structures in Python, Go, or TypeScript |
+| UI Regression | `skills/ui-regression/` | After frontend changes, before marking a step done |
+
+Full index: `skills/README.md`
+
+### Using a skill
+
+1. Open the skill's `SKILL.md` and follow the steps in order.
+2. Record the result in `PROJECT_STATUS.md` using the handoff format at the bottom of each skill.
+3. If a skill fails, follow its failure handling section before escalating.
+
+### Recommended skill sequence for end-of-step handoff
+
+1. Run **Runtime Gate** — confirm all services and APIs are green.
+2. Run **Schema Drift Checker** — if any data structures were changed in this step.
+3. Run **UI Regression** — if any frontend code was changed.
+4. Update `PROJECT_STATUS.md` with results from all skills run.
+
 ## MCP Workflow (Operational)
 MCP is optional but recommended for persistence across agents.
 

@@ -1,27 +1,38 @@
 /**
- * AircraftLayer — renders live aircraft positions on the map.
+ * AircraftLayer — renders live aircraft as directional icons.
  *
- * Currently uses ScatterplotLayer (coloured dots) for simplicity.
- * Step 12 (UI polish) will upgrade this to IconLayer with a directional
- * aircraft icon that rotates to match heading_deg.
+ * Uses deck.gl IconLayer so each aircraft icon can rotate to match its
+ * heading_deg. The icon atlas is a single SVG pointing north (0°); Deck.gl
+ * rotates it clockwise, which matches compass bearing convention.
+ *
+ * When heading_deg is unavailable (null/undefined), the icon shows north-up
+ * as a neutral fallback rather than a misleading direction.
  *
  * Returns null when the aircraft layer is toggled off in the UI store.
  */
 
 import { useMemo } from 'react'
-import { ScatterplotLayer } from '@deck.gl/layers'
+import { IconLayer } from '@deck.gl/layers'
+import type { PickingInfo } from '@deck.gl/core'
 import { useEntitiesStore } from '../../store/entities.store'
 import { useUiStore } from '../../store/ui.store'
 import type { NormalizedEntity } from '../../types/entities'
 
-// Cyan — stands out against the dark map basemap and ocean
-const AIRCRAFT_COLOR: [number, number, number, number] = [0, 210, 255, 220]
+// Single-icon atlas: a 64×64 SVG of an aircraft pointing north.
+// Served from /public so Vite copies it to dist/ on build.
+const ICON_ATLAS = '/aircraft-icon.svg'
+const ICON_MAPPING = {
+  aircraft: { x: 0, y: 0, width: 64, height: 64, mask: true },
+}
 
-export function useAircraftLayer() {
+interface Props {
+  onPick?: (info: PickingInfo) => void
+}
+
+export function useAircraftLayer({ onPick }: Props = {}) {
   const visible  = useUiStore((s) => s.layers.aircraft)
   const entities = useEntitiesStore((s) => s.entities)
 
-  // Derive the aircraft array only when the entities Map reference changes.
   const aircraft = useMemo(
     () =>
       visible
@@ -32,22 +43,28 @@ export function useAircraftLayer() {
 
   return useMemo(
     () =>
-      new ScatterplotLayer<NormalizedEntity>({
+      new IconLayer<NormalizedEntity>({
         id: 'aircraft',
         data: aircraft,
+        iconAtlas:   ICON_ATLAS,
+        iconMapping: ICON_MAPPING,
+        getIcon:     () => 'aircraft',
         getPosition: (e) => [e.lon, e.lat, e.alt_m ?? 0],
-        getFillColor: AIRCRAFT_COLOR,
-        getRadius: 4_000, // 4 km — visible at zoom 4, not overwhelming at zoom 8
-        radiusMinPixels: 3,
-        radiusMaxPixels: 14,
-        pickable: true,
-        // updateTriggers tells deck.gl exactly which props changed so it avoids
-        // re-uploading unchanged GPU buffers on every render.
+        // getAngle: deck.gl rotates counter-clockwise in degrees.
+        // heading_deg is clockwise from north, so negate it.
+        getAngle:    (e) => -(e.heading_deg ?? 0),
+        getSize:     28,
+        sizeMinPixels: 14,
+        sizeMaxPixels: 40,
+        // mask:true + getColor lets us tint the white SVG silhouette
+        getColor:    [0, 210, 255, 220],
+        pickable:    true,
+        onClick:     onPick,
         updateTriggers: {
           getPosition: aircraft,
-          getFillColor: aircraft,
+          getAngle:    aircraft,
         },
       }),
-    [aircraft],
+    [aircraft, onPick],
   )
 }

@@ -19,11 +19,15 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { ScatterplotLayer } from '@deck.gl/layers'
-import type { Layer } from '@deck.gl/core'
+import type { Layer, PickingInfo } from '@deck.gl/core'
 import { useUiStore } from '../../store/ui.store'
 import type { SatellitePosition } from '../../workers/satellite-propagator.worker'
 
-export function useSatelliteLayer(): Layer | null {
+interface Props {
+  onPick?: (info: PickingInfo) => void
+}
+
+export function useSatelliteLayer({ onPick }: Props = {}): Layer | null {
   const visible = useUiStore((s) => s.layers.satellites)
 
   const [positions, setPositions] = useState<SatellitePosition[]>([])
@@ -73,13 +77,12 @@ export function useSatelliteLayer(): Layer | null {
   return new ScatterplotLayer<SatellitePosition>({
     id: 'satellites',
     data: positions,
-    // Deck.gl expects [longitude, latitude] (note: lon before lat)
     getPosition: (d) => [d.lon, d.lat],
-    // Gold/yellow dots to distinguish satellites from aircraft (white) and ships (blue)
     getFillColor: [255, 220, 50, 200],
     getRadius: 3,
     radiusMinPixels: 2,
     radiusMaxPixels: 6,
     pickable: true,
+    onClick: onPick,
   })
 }

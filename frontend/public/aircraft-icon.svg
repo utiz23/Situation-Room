@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- Aircraft silhouette pointing UP (north = 0°).
+       Deck.gl IconLayer rotates clockwise from north, matching heading_deg. -->
+  <polygon points="32,4 38,28 56,36 38,34 36,60 32,54 28,60 26,34 8,36 26,28"
+           fill="white" fill-opacity="0.95"/>
+</svg>

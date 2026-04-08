@@ -8,12 +8,16 @@
  * On every map move, the current viewport bounding box is sent to the server
  * via WebSocket so the Go hub can filter which entity updates to forward.
  * This is the "viewport filtering" feature described in the architecture.
+ *
+ * Overlay components (LayerToggle, EntityPopup) are rendered as absolute-
+ * positioned siblings inside the same container div so they sit above the map
+ * canvas but don't interfere with Deck.gl's pointer events.
  */
 
 import { useCallback, useRef, useState } from 'react'
 import DeckGL from '@deck.gl/react'
 import { WebMercatorViewport } from '@deck.gl/core'
-import type { MapViewState } from '@deck.gl/core'
+import type { MapViewState, PickingInfo, ViewStateChangeParameters } from '@deck.gl/core'
 import Map from 'react-map-gl/maplibre'
 import 'maplibre-gl/dist/maplibre-gl.css'
 
@@ -23,6 +27,12 @@ import { useShipLayer } from './layers/ShipLayer'
 import { useGpsJamLayer } from './layers/GpsJamLayer'
 import { useSatelliteLayer } from './layers/SatelliteLayer'
 import { useEventLayer } from './layers/EventLayer'
+import { LayerToggle } from '../ui/LayerToggle'
+import { EntityPopup } from '../ui/EntityPopup'
+import type { PopupTarget } from '../ui/EntityPopup'
+import type { NormalizedEntity } from '../types/entities'
+import type { MapEvent } from '../types/layers'
+import type { SatellitePosition } from '../workers/satellite-propagator.worker'
 
 // OpenFreeMap liberty style — free, no API key required.
 // Serves vector tiles and renders them client-side with MapLibre.
@@ -52,15 +62,47 @@ function viewStateToBBox(
   return [south, west, north, east]
 }
 
+interface PopupState {
+  target: PopupTarget
+  x: number
+  y: number
+}
+
 export default function SituationMap() {
   const [viewState, setViewState] = useState<MapViewState>(INITIAL_VIEW_STATE)
+  const [popup, setPopup] = useState<PopupState | null>(null)
 
   const { sendViewport } = useEntityStream()
-  const gpsJamLayer   = useGpsJamLayer()
-  const eventLayer    = useEventLayer()
-  const shipLayer     = useShipLayer()
-  const satelliteLayer = useSatelliteLayer()
-  const aircraftLayer = useAircraftLayer()
+
+  // Unified click handler — called by all pickable layers.
+  // Deck.gl passes a PickingInfo object with:
+  //   .object  — the data item that was clicked
+  //   .x / .y  — pixel position of the click on screen
+  const handlePick = useCallback((info: PickingInfo) => {
+    if (!info.object) return
+
+    let target: PopupTarget | null = null
+
+    // Satellites store has SatellitePosition objects (id, name, lat, lon, alt_m)
+    // They have an `id` field but no `entity_type` — use that to distinguish.
+    if ('entity_type' in info.object) {
+      target = { kind: 'entity', data: info.object as NormalizedEntity }
+    } else if ('event_type' in info.object) {
+      target = { kind: 'event', data: info.object as MapEvent }
+    } else if ('alt_m' in info.object) {
+      target = { kind: 'satellite', data: info.object as SatellitePosition }
+    }
+
+    if (target) {
+      setPopup({ target, x: info.x, y: info.y })
+    }
+  }, [])
+
+  const gpsJamLayer    = useGpsJamLayer()
+  const eventLayer     = useEventLayer({ onPick: handlePick })
+  const shipLayer      = useShipLayer({ onPick: handlePick })
+  const satelliteLayer = useSatelliteLayer({ onPick: handlePick })
+  const aircraftLayer  = useAircraftLayer({ onPick: handlePick })
 
   // Layer order = render order (bottom → top):
   //   GPS jam hexes → events → ships → satellites → aircraft
@@ -73,9 +115,10 @@ export default function SituationMap() {
   const vpTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const handleViewStateChange = useCallback(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    ({ viewState: next }: { viewState: any }) => {
-      setViewState(next as MapViewState)
+    // ViewStateChangeParameters defaults to <any> in deck.gl's own type definition,
+    // so viewState is typed `any` here — no cast needed, no eslint suppression.
+    ({ viewState: next }: ViewStateChangeParameters) => {
+      setViewState(next)
 
       if (vpTimerRef.current) clearTimeout(vpTimerRef.current)
       vpTimerRef.current = setTimeout(() => {
@@ -87,14 +130,34 @@ export default function SituationMap() {
   )
 
   return (
-    <DeckGL
-      viewState={viewState}
-      onViewStateChange={handleViewStateChange}
-      controller={true}
-      layers={layers}
-    >
-      {/* Map renders as a child of DeckGL so they share the same WebGL context */}
-      <Map mapStyle={MAP_STYLE} />
-    </DeckGL>
+    // position:relative makes this div the "anchor" for absolute children
+    // (LayerToggle, EntityPopup). Without it, they'd position relative to
+    // the nearest positioned ancestor (often the body/html element).
+    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+      <DeckGL
+        viewState={viewState}
+        onViewStateChange={handleViewStateChange}
+        controller={true}
+        layers={layers}
+        // Clicking empty map space dismisses any open popup
+        onClick={(info) => { if (!info.object) setPopup(null) }}
+      >
+        {/* Map renders as a child of DeckGL so they share the same WebGL context */}
+        <Map mapStyle={MAP_STYLE} />
+      </DeckGL>
+
+      {/* Layer toggle panel — bottom-left, always visible */}
+      <LayerToggle />
+
+      {/* Entity popup — only shown when something is clicked */}
+      {popup && (
+        <EntityPopup
+          target={popup.target}
+          x={popup.x}
+          y={popup.y}
+          onClose={() => setPopup(null)}
+        />
+      )}
+    </div>
   )
 }

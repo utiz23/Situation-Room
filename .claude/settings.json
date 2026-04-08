@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc:*)",
+      "Read(//home/michal/.nvm/versions/node/**)",
+      "Bash(export PATH=\"/home/michal/.nvm/versions/node/v22.22.2/bin:$PATH\")"
+    ]
+  }
+}

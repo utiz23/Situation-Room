@@ -46,7 +46,7 @@ It displays five live data layers:
 
 ## Current Build Status
 
-We are on **Step 10 of 12** — Events system complete and verified.
+We are on **Step 12 of 12** — Steps 1–11 complete and verified. UI polish is next.
 
 | Step | Status | What it is |
 |---|---|---|
@@ -60,7 +60,7 @@ We are on **Step 10 of 12** — Events system complete and verified.
 | 8. GPS jamming layer | ✓ Done | Daily ingest + REST + hex layer |
 | 9. Satellite layer | ✓ Done | TLE ingest + client-side propagation |
 | 10. Events system | ✓ Done | Admin create/delete + live WS event fanout |
-| 11. Nginx integration | Pending | Unified production serving/routing |
+| 11. Nginx integration | ✓ Done | Unified production serving/routing |
 | 12. UI polish | Pending | Layer controls, popups, icon polish |
 
 Full plan: [dazzling-twirling-marshmallow.md](dazzling-twirling-marshmallow.md)
@@ -147,3 +147,36 @@ External websites (OpenSky for planes, AISStream for ships, CelesTrak for satell
 - **Dev frontend runs on the host** (`npm run dev`), not inside Docker. The production Dockerfile does a full build.
 - **`POST /api/events`** requires `Authorization: Bearer {ADMIN_KEY}` header. `GET /api/events` is public.
 - **Health check** endpoint is `GET /api/health` (not `/health`) so Nginx routes it correctly.
+
+---
+
+## Skill Usage Policy
+
+This repo has a `skills/` directory containing step-by-step procedures for common tasks. **Use these skills by default** — do not invent new workflows when a skill already covers the task.
+
+### Available skills
+
+| Task | Skill to use | File |
+|---|---|---|
+| Verifying the stack is healthy (pre-push, end-of-step) | Runtime Gate | `skills/runtime-gate/SKILL.md` |
+| Debugging a broken service, empty layer, or error | Incident Triage | `skills/incident-triage/SKILL.md` |
+| Checking Python/Go/TypeScript data structures match | Schema Drift Checker | `skills/schema-drift/SKILL.md` |
+| Verifying the frontend loads and renders correctly | UI Regression | `skills/ui-regression/SKILL.md` |
+
+Full index: `skills/README.md`
+
+### Rules
+
+1. **Before** performing verification, debugging, schema changes, or UI testing — check `skills/` for a matching skill.
+2. **If a skill exists** for the task — follow its steps, commands, and output format. Do not improvise a different workflow.
+3. **If multiple skills apply** — use the most specific one first (e.g., use Incident Triage for a broken service, not Runtime Gate).
+4. **If a skill is incomplete** for your situation — use it as the baseline, then state any additional steps you took and why.
+5. **When a skill requires it** — update `PROJECT_STATUS.md` with results using the handoff format defined in the skill file.
+6. **Do not skip** required verification steps defined in a skill, even if you believe they will pass.
+
+### When to run skills
+
+- **End of any implementation step**: Runtime Gate + UI Regression (if frontend changed) + Schema Drift (if data structures changed).
+- **Something is broken**: Incident Triage first, then Runtime Gate to confirm the fix.
+- **Before pushing code**: Runtime Gate.
+- **After modifying schemas**: Schema Drift Checker.
